@@ -1,0 +1,82 @@
+# Orchestrates the full social-media stack for local development.
+# Run from this directory (social-media-deploy/). Expects the sibling repos cloned alongside:
+#   ../social-media-frontend  ../social-media-backend-fastapi  ../social-media-backend-django
+#
+# Real entrypoint is nginx on http://fastapi.localhost and http://django.localhost.
+# The extra published host ports are optional, for direct debugging only.
+
+services:
+  db:
+    image: postgres:16
+    env_file: ./env/postgres.env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/db-init.sh:/docker-entrypoint-initdb.d/db-init.sh:ro
+    ports:
+      - "5432:5432"            # debug: connect a DB GUI
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend-fastapi:
+    build: ../social-media-backend-fastapi
+    env_file: ./env/backend-fastapi.env
+    volumes:
+      - ../social-media-backend-fastapi:/app    # hot reload
+    ports:
+      - "8001:8000"            # debug: hit FastAPI directly / Swagger
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend-django:
+    build: ../social-media-backend-django
+    env_file: ./env/backend-django.env
+    volumes:
+      - ../social-media-backend-django:/app     # hot reload
+    ports:
+      - "8002:8000"            # debug: hit Django directly / Swagger / admin
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend-fastapi:
+    build: ../social-media-frontend
+    env_file: ./env/frontend-fastapi.env
+    volumes:
+      - ../social-media-frontend:/app           # hot reload
+      - /app/node_modules                       # keep container's installed deps
+      - /app/.next                              # per-container build dir (avoid clash with the other frontend)
+    ports:
+      - "3001:3000"            # debug: hit this Next instance directly
+    depends_on:
+      - backend-fastapi
+
+  frontend-django:
+    build: ../social-media-frontend             # SAME repo, different backend wiring
+    env_file: ./env/frontend-django.env
+    volumes:
+      - ../social-media-frontend:/app
+      - /app/node_modules
+      - /app/.next                              # per-container build dir
+    ports:
+      - "3002:3000"
+    depends_on:
+      - backend-django
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "80:80"                # the real entrypoint
+    depends_on:
+      - frontend-fastapi
+      - frontend-django
+      - backend-fastapi
+      - backend-django
+
+volumes:
+  pgdata:

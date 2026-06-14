@@ -1,0 +1,4 @@
+# real env files (only *.example is committed)
+env/*.env
+.env
+.DS_Store
