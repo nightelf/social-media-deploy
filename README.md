@@ -41,13 +41,22 @@ wiring (`docker-compose.yml`, nginx, env templates, scripts) and the cross-cutti
   └── social-media-backend-django/
   ```
 
+## Repositories
+| Repo | GitHub |
+|---|---|
+| `social-media-deploy` (this one) | https://github.com/nightelf/social-media-deploy |
+| `social-media-frontend` | https://github.com/nightelf/social-media-frontend |
+| `social-media-backend-fastapi` | https://github.com/nightelf/social-media-backend-fastapi |
+| `social-media-backend-django` | https://github.com/nightelf/social-media-backend-django |
+
 ## Quick start
 ```bash
-# from social_media_app/
-git clone <…/social-media-deploy>
-git clone <…/social-media-frontend>
-git clone <…/social-media-backend-fastapi>
-git clone <…/social-media-backend-django>
+# clone all four side by side into one workspace folder
+mkdir social_media_app && cd social_media_app
+git clone git@github.com:nightelf/social-media-deploy.git
+git clone git@github.com:nightelf/social-media-frontend.git
+git clone git@github.com:nightelf/social-media-backend-fastapi.git
+git clone git@github.com:nightelf/social-media-backend-django.git
 
 cd social-media-deploy
 ./scripts/up.sh                 # copies env/*.example -> env/*.env, then docker compose up --build
